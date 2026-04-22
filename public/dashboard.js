@@ -1,15 +1,13 @@
-const API_URL = window.location.origin;
+const API_BASE_URL = window.location.origin; 
 let total = 0;
 let budget = localStorage.getItem("userBudget") ? parseFloat(localStorage.getItem("userBudget")) : 0;
 let myChart;
-let allExpenses = []; // Global store for PDF export
-
 const userId = localStorage.getItem("userId");
 const username = localStorage.getItem("username");
 
 window.onload = function() {
     if (!userId) { window.location.href = "auth.html"; return; }
-    document.getElementById("welcomeMessage").innerText = `Welcome back, ${username}!`;
+    document.getElementById("welcomeMessage").innerText = `Welcome Back, ${username}!`;
     document.getElementById("currentBudgetText").innerText = `Current Budget: ₹${budget}`;
     
     const ctx = document.getElementById('expenseChart').getContext('2d');
@@ -23,75 +21,23 @@ window.onload = function() {
 
 async function fetchExpenses() {
     try {
-        const response = await fetch(`http://localhost:5001/api/expenses/${userId}`);
-        allExpenses = await response.json();
-        
+        const response = await fetch(`${API_BASE_URL}/api/expenses/${userId}`);
+        const expenses = await response.json();
         total = 0;
         const chartMap = {};
         const list = document.getElementById("expenseList");
         list.innerHTML = "";
-
-        allExpenses.forEach(exp => {
+        expenses.forEach(exp => {
             updateUIList(exp.description, exp.amount, exp._id);
             total += exp.amount;
             chartMap[exp.description] = (chartMap[exp.description] || 0) + exp.amount;
         });
-
         document.getElementById("total").innerText = total;
         myChart.data.labels = Object.keys(chartMap);
         myChart.data.datasets[0].data = Object.values(chartMap);
         myChart.update();
         updateRemaining();
-    } catch (error) { console.error(error); }
-}
-
-// FEATURE 1: Smart Budget Logic
-function calculateSmartBudget() {
-    const income = parseFloat(document.getElementById("incomeInput").value);
-    const suggestion = document.getElementById("smart-suggestion-text");
-    
-    if (income > 0) {
-        const needs = (income * 0.5).toFixed(0);
-        const wants = (income * 0.3).toFixed(0);
-        const savings = (income * 0.2).toFixed(0);
-        suggestion.innerHTML = `Based on ₹${income}: Spend <b>₹${needs}</b> on Needs, <b>₹${wants}</b> on Wants, and save <b>₹${savings}</b>.`;
-    } else {
-        suggestion.innerText = "Enter your total income to see recommended limits.";
-    }
-}
-
-// FEATURE 2: PDF Export Logic
-function exportToPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // PDF Header
-    doc.setFontSize(20);
-    doc.setTextColor(99, 102, 241);
-    doc.text("SmartSpend Financial Report", 20, 20);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(100);
-    doc.text(`User: ${username}`, 20, 30);
-    doc.text(`Total Monthly Spend: Rs. ${total}`, 20, 37);
-    doc.text(`Current Budget Status: Rs. ${budget}`, 20, 44);
-
-    // Table Data
-    const tableData = allExpenses.map(exp => [
-        exp.description, 
-        `Rs. ${exp.amount}`, 
-        new Date(exp.date).toLocaleDateString()
-    ]);
-
-    doc.autoTable({
-        startY: 55,
-        head: [['Description', 'Amount', 'Date']],
-        body: tableData,
-        theme: 'grid',
-        headStyles: { fillColor: [99, 102, 241] }
-    });
-
-    doc.save(`${username}_Financial_Report.pdf`);
+    } catch (error) { console.error("Fetch Error:", error); }
 }
 
 async function addExpense() {
@@ -99,8 +45,9 @@ async function addExpense() {
     const amount = parseFloat(document.getElementById("amount").value);
     if (!desc || isNaN(amount)) return;
     try {
-        const response = await fetch('http://localhost:5001/api/expenses', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const response = await fetch(`${API_BASE_URL}/api/expenses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ description: desc, amount: amount, userId: userId })
         });
         if (response.ok) {
@@ -108,15 +55,15 @@ async function addExpense() {
             document.getElementById("success-container").style.display = "block";
             fetchExpenses(); 
         }
-    } catch (error) { alert("Error"); }
+    } catch (error) { console.error("Add Error:", error); }
 }
 
 async function deleteExpense(id) {
-    if (!confirm("Delete?")) return;
+    if (!confirm("Delete this transaction?")) return;
     try {
-        const response = await fetch(`http://localhost:5001/api/expenses/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/expenses/${id}`, { method: 'DELETE' });
         if (response.ok) fetchExpenses(); 
-    } catch (error) { alert("Error"); }
+    } catch (error) { console.error("Delete Error:", error); }
 }
 
 function updateUIList(desc, amount, id) {
