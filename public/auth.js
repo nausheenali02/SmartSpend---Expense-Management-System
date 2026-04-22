@@ -1,6 +1,5 @@
 // --- Configuration ---
-const API_URL = "http://localhost:5001/api/auth";
-
+const API_URL = window.location.origin;
 // --- State Management ---
 let isLoginMode = true;
 
