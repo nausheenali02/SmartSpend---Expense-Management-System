@@ -1,3 +1,4 @@
+const API_URL = window.location.origin;
 let total = 0;
 let budget = localStorage.getItem("userBudget") ? parseFloat(localStorage.getItem("userBudget")) : 0;
 let myChart;
