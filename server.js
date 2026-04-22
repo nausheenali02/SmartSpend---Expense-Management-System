@@ -62,8 +62,5 @@ app.delete('/api/expenses/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Failed to delete" }); }
 });
 
-const PORT = process.env.PORT || 5001;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5001; 
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
